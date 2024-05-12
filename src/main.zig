@@ -8,8 +8,40 @@ const gl_log = std.log.scoped(.gl);
 /// Procedure table that will hold loaded OpenGL functions.
 var gl_procs: gl.ProcTable = undefined;
 
-fn logGLFWError(error_code: glfw.ErrorCode, description: [:0]const u8) void {
-    glfw_log.err("{}: {s}\n", .{ error_code, description });
+fn createGLWindow() ?glfw.Window {
+    return glfw.Window.create(640, 480, "GLFW + OpenGL", null, null, .{
+        .context_version_major = gl.info.version_major,
+        .context_version_minor = gl.info.version_minor,
+        .opengl_profile = .opengl_core_profile,
+        .opengl_forward_compat = true,
+    }) orelse {
+        return null;
+    };
+}
+
+test "Init GLFW and OpenGL GLFW Window Test" {
+    if (!glfw.init(.{})) {
+        glfw_log.err("failed to initialize GLFW: {?s}", .{glfw.getErrorString()});
+        return error.GLFWInitFailed;
+    }
+    defer glfw.terminate();
+    const window = createGLWindow();
+    defer if (window != null) {
+        window.?.destroy();
+    };
+}
+
+fn runRenderer(window: glfw.Window) void {
+    while (true) {
+        glfw.pollEvents();
+        if (window.shouldClose()) break;
+        {}
+        window.swapBuffers();
+    }
+}
+
+fn errorCallback(error_code: glfw.ErrorCode, description: [:0]const u8) void {
+    std.log.err("glfw: {}: {s}\n", .{ error_code, description });
 }
 
 pub fn main() !void {
@@ -20,14 +52,9 @@ pub fn main() !void {
     defer glfw.terminate();
 
     // Create our window, specifying that we want to use OpenGL.
-    const window = glfw.Window.create(640, 480, "mach-glfw + OpenGL", null, null, .{
-        .context_version_major = gl.info.version_major,
-        .context_version_minor = gl.info.version_minor,
-        .opengl_profile = .opengl_core_profile,
-        .opengl_forward_compat = true,
-    }) orelse {
-        glfw_log.err("failed to create GLFW window: {?s}", .{glfw.getErrorString()});
-        return error.CreateWindowFailed;
+    const window = createGLWindow() orelse {
+        std.log.err("failed to create GLFW window: {?s}", .{glfw.getErrorString()});
+        std.process.exit(1);
     };
     defer window.destroy();
 
@@ -42,12 +69,7 @@ pub fn main() !void {
     gl.makeProcTableCurrent(&gl_procs);
     defer gl.makeProcTableCurrent(null);
 
-    while (true) {
-        glfw.pollEvents();
-        if (window.shouldClose()) break;
-        {}
-        window.swapBuffers();
-    }
+    runRenderer(window);
 }
 
 // pub fn main() !void {
