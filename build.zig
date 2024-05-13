@@ -24,11 +24,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // This declares intent for the library to be installed into the standard
-    // location when the user invokes the "install" step (the default step when
-    // running `zig build`).
-    b.installArtifact(lib);
-
     const exe = b.addExecutable(.{
         .name = "zig-glfw",
         .root_source_file = .{ .path = "src/main.zig" },
@@ -41,6 +36,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    // lib.root_module.addImport("mach-glfw", mach_glfw_dep.module("mach-glfw"));
     exe.root_module.addImport("mach-glfw", mach_glfw_dep.module("mach-glfw"));
 
     // Use zigglgen to generate OpenGL bindings.
@@ -49,7 +45,13 @@ pub fn build(b: *std.Build) void {
         .version = .@"4.1", // OpenGL 4.1 is the last version supported on macOS.
         .profile = .core,
     });
+    // lib.root_module.addImport("gl", gl_bindings);
     exe.root_module.addImport("gl", gl_bindings);
+
+    // This declares intent for the library to be installed into the standard
+    // location when the user invokes the "install" step (the default step when
+    // running `zig build`).
+    b.installArtifact(lib);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -86,6 +88,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    lib_unit_tests.root_module.addImport("mach-glfw", mach_glfw_dep.module("mach-glfw"));
+    lib_unit_tests.root_module.addImport("gl", gl_bindings);
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
@@ -95,8 +99,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe_unit_tests.root_module.addImport("mach-glfw", mach_glfw_dep.module("mach-glfw"));
-    exe_unit_tests.root_module.addImport("gl", gl_bindings);
+    // exe_unit_tests.root_module.addImport("mach-glfw", mach_glfw_dep.module("mach-glfw"));
+    // exe_unit_tests.root_module.addImport("gl", gl_bindings);
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
